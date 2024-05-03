@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+option java_package = "app.src.main.java";
+option java_multiple_files = true;
+
+message MyProto{
+  int32 example_counter = 1;
+}
