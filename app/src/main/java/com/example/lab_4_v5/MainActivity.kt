@@ -44,6 +44,7 @@ import androidx.navigation.compose.rememberNavController
 import app.src.main.java.MyProto
 import com.example.lab_4_v5.ui.theme.Lab_4_v5Theme
 import com.google.protobuf.InvalidProtocolBufferException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -94,6 +95,7 @@ class CustomViewModel(dataStore1: DataStore<Preferences>, dataStore2: DataStore<
         viewModelScope.launch{
            dataStore1.data.first()
             dataStore2.data.first()
+            _darkMode = MutableStateFlow(dataStore1.data.first().get(EXAMPLE_COUNTER)?:false)
             darkMode.first()
 
             dataStore1.data.collect{
@@ -148,6 +150,12 @@ fun Menu(cVM: CustomViewModel){
     }
 }
 
+
+fun doTheDataStore(flow: StateFlow<Boolean?>){
+    if (flow == null){
+
+    }
+}
 
 
 
