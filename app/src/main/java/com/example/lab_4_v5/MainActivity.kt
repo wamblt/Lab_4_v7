@@ -59,9 +59,6 @@ import java.io.OutputStream
 
 val EXAMPLE_COUNTER = booleanPreferencesKey("example_counter")
 
-
-
-
 //adapted from Android Studio docs for ProtoDataStore
 object SuperSerializer: Serializer<MyProto> {
     override val defaultValue: MyProto = MyProto.getDefaultInstance()
@@ -76,6 +73,11 @@ object SuperSerializer: Serializer<MyProto> {
     override suspend fun writeTo(t: MyProto, output: OutputStream) = t.writeTo(output)
 
 }
+
+val Context.boolDataStore: DataStore<MyProto> by dataStore(
+    fileName = "datastore.pb",
+    serializer = SuperSerializer
+)
 
 class MainActivity : ComponentActivity(){
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,6 +96,10 @@ class MyApp: Application(){
 class CustomViewModel(dataStore1: DataStore<Preferences>, dataStore2: DataStore<MyProto>): ViewModel(){
     private lateinit var _darkMode: MutableStateFlow<Boolean>
     val darkMode: StateFlow<Boolean> get() = _darkMode.asStateFlow()
+
+    suspend fun SaveToDataStore(){
+        //dataStore1
+    }
 
     init {
         runBlocking {
@@ -155,13 +161,11 @@ fun Menu(cVM: CustomViewModel){
     }
 }
 
-fun doTheDataStore(flow: StateFlow<Boolean?>){
-    if (flow == null){
-
+fun doTheDataStore(flow: StateFlow<Boolean?>): Boolean {
+    if (flow.value == null){
+        return false
     }
-}
-suspend fun saveToProtoDataStore(){
-
+    return true
 }
 
 
