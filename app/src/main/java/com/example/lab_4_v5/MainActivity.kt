@@ -3,6 +3,7 @@ package com.example.lab_4_v5
 import android.app.Application
 import android.content.Context
 import android.os.Bundle
+import android.provider.ContactsContract.Data
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -52,10 +53,14 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.InputStream
 import java.io.OutputStream
 
 val EXAMPLE_COUNTER = booleanPreferencesKey("example_counter")
+
+
+
 
 //adapted from Android Studio docs for ProtoDataStore
 object SuperSerializer: Serializer<MyProto> {
@@ -69,7 +74,6 @@ object SuperSerializer: Serializer<MyProto> {
     }
 
     override suspend fun writeTo(t: MyProto, output: OutputStream) = t.writeTo(output)
-
 
 }
 
@@ -89,15 +93,13 @@ class MyApp: Application(){
 
 class CustomViewModel(dataStore1: DataStore<Preferences>, dataStore2: DataStore<MyProto>): ViewModel(){
     private lateinit var _darkMode: MutableStateFlow<Boolean>
-    val darkMode: StateFlow<Boolean> = _darkMode.asStateFlow()
+    val darkMode: StateFlow<Boolean> get() = _darkMode.asStateFlow()
 
     init {
-        viewModelScope.launch{
-           dataStore1.data.first()
-            dataStore2.data.first()
+        runBlocking {
             _darkMode = MutableStateFlow(dataStore1.data.first().get(EXAMPLE_COUNTER)?:false)
-            darkMode.first()
-
+        }
+        viewModelScope.launch{
             dataStore1.data.collect{
                 it[EXAMPLE_COUNTER]?.let { it1 -> _darkMode.emit(it1) }
             }
@@ -121,7 +123,7 @@ fun App(model: CustomViewModel = viewModel(factory = CustomViewModel.Factory)){
     val darkModeFlag by model.darkMode.collectAsState()
     Lab_4_v5Theme()  {
         Surface(modifier = Modifier.fillMaxSize()) {
-            NavHost(navController = nav, startDestination = "/") {
+            NavHost(navController = nav, startDestination = "main") {
                 composable("main"){ Menu(cVM = model) }
             }
         }
@@ -146,48 +148,21 @@ fun Menu(cVM: CustomViewModel){
 
             })
         }
+        Column {
+            Text(text = "Lab 4")
+        }
     }
     }
 }
-
 
 fun doTheDataStore(flow: StateFlow<Boolean?>){
     if (flow == null){
 
     }
 }
+suspend fun saveToProtoDataStore(){
+
+}
 
 
 
-//class MainActivity : ComponentActivity() {
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
-//        setContent {
-//            Lab_4_v5Theme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-//                    Greeting(
-//                        name = "Android",
-//                        modifier = Modifier.padding(innerPadding)
-//                    )
-//                }
-//            }
-//        }
-//    }
-//}
-//
-//@Composable
-//fun Greeting(name: String, modifier: Modifier = Modifier) {
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    Lab_4_v5Theme {
-//        Greeting("Android")
-//    }
-//}
