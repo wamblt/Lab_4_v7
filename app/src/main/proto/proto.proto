@@ -4,5 +4,5 @@ option java_package = "app.src.main.java";
 option java_multiple_files = true;
 
 message MyProto{
-  int32 example_counter = 1;
+  bool example_counter = 1;
 }

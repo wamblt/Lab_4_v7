@@ -1,41 +1,36 @@
 package com.example.lab_4_v5
 
 import android.app.Application
-import android.content.Context
 import android.os.Bundle
-import android.provider.ContactsContract.Data
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
-import androidx.datastore.dataStoreFile
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.ViewModelFactoryDsl
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -49,15 +44,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.InputStream
 import java.io.OutputStream
 
 val EXAMPLE_COUNTER = booleanPreferencesKey("example_counter")
+
+
 
 //adapted from Android Studio docs for ProtoDataStore
 object SuperSerializer: Serializer<MyProto> {
@@ -73,12 +69,6 @@ object SuperSerializer: Serializer<MyProto> {
     override suspend fun writeTo(t: MyProto, output: OutputStream) = t.writeTo(output)
 
 }
-
-val Context.boolDataStore: DataStore<MyProto> by dataStore(
-    fileName = "datastore.pb",
-    serializer = SuperSerializer
-)
-
 class MainActivity : ComponentActivity(){
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,21 +83,49 @@ class MyApp: Application(){
     val preferDataStore by preferencesDataStore(name = "testDataStore")
 }
 
-class CustomViewModel(dataStore1: DataStore<Preferences>, dataStore2: DataStore<MyProto>): ViewModel(){
-    private lateinit var _darkMode: MutableStateFlow<Boolean>
-    val darkMode: StateFlow<Boolean> get() = _darkMode.asStateFlow()
+class CustomViewModel(val dataStore1: DataStore<Preferences>, val dataStore2: DataStore<MyProto>): ViewModel(){
+    private lateinit var _preferDarkMode: MutableStateFlow<Boolean>
+    private lateinit var _protoDarkMode: MutableStateFlow<Boolean>
 
-    suspend fun SaveToDataStore(){
-        //dataStore1
+    val preferDarkMode: StateFlow<Boolean> get() = _preferDarkMode.asStateFlow()
+    val protoDarkMode: StateFlow<Boolean> get() = _protoDarkMode.asStateFlow()
+
+
+    val readFromPreferDataStore: Flow<Boolean> = dataStore1.data.map {
+        it[EXAMPLE_COUNTER] ?: true
     }
+
+     fun saveToPreferDataStore() {
+        viewModelScope.launch {
+            dataStore1.edit {
+                val current = it[EXAMPLE_COUNTER] ?: true
+                it[EXAMPLE_COUNTER] = !current
+            }
+        }
+    }
+
+    val readFromProtoDataStore: StateFlow<Boolean> get() = _protoDarkMode.asStateFlow()
+    fun saveToProtoDataStore(){
+        viewModelScope.launch {
+            dataStore2.updateData {
+                it.toBuilder().setExampleCounter(!it.exampleCounter).build()
+            }
+        }
+    }
+
+
 
     init {
         runBlocking {
-            _darkMode = MutableStateFlow(dataStore1.data.first().get(EXAMPLE_COUNTER)?:false)
+            _preferDarkMode = MutableStateFlow(dataStore1.data.first().get(EXAMPLE_COUNTER)?:false)
+            _protoDarkMode = MutableStateFlow(dataStore2.data.first().exampleCounter?:false)
         }
         viewModelScope.launch{
             dataStore1.data.collect{
-                it[EXAMPLE_COUNTER]?.let { it1 -> _darkMode.emit(it1) }
+                it[EXAMPLE_COUNTER]?.let { it1 -> _preferDarkMode.emit(it1) }
+            }
+            dataStore2.data.collect{
+                _protoDarkMode.emit(it.exampleCounter)
             }
         }
     }
@@ -126,7 +144,7 @@ class CustomViewModel(dataStore1: DataStore<Preferences>, dataStore2: DataStore<
 @Composable
 fun App(model: CustomViewModel = viewModel(factory = CustomViewModel.Factory)){
     val nav = rememberNavController()
-    val darkModeFlag by model.darkMode.collectAsState()
+    //val darkModeFlag by model.preferDarkMode.collectAsState()
     Lab_4_v5Theme()  {
         Surface(modifier = Modifier.fillMaxSize()) {
             NavHost(navController = nav, startDestination = "main") {
@@ -139,34 +157,43 @@ fun App(model: CustomViewModel = viewModel(factory = CustomViewModel.Factory)){
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Menu(cVM: CustomViewModel){
-    Scaffold(topBar = { TopAppBar(title = {Text(text = "Dark mode toggles")}) }) {
+    val preferDarkMode by cVM.preferDarkMode.collectAsState()
+    val protoDarkMode by cVM.protoDarkMode.collectAsState()
+
+
+    Scaffold(topBar = { TopAppBar(title = {Text(text = "Dark mode playground")}) }) {
             innerpadding -> Column (modifier = Modifier.padding(innerpadding), verticalArrangement = Arrangement.SpaceBetween){
+        Column {
+            Text(text = "Checkboxes")
+        }
 
         Column {
             Text(text = "PreferenceDataStore Toggle")
-            Switch(checked = false, onCheckedChange = {
-                cVM.darkMode.value
+            Switch(checked = preferDarkMode, onCheckedChange = {
+                cVM.saveToPreferDataStore()
             })
         }
         Column {
             Text(text = "ProtoDataStore Toggle")
-            Switch(checked = false, onCheckedChange = {
-
+            Switch(checked = protoDarkMode, onCheckedChange = {
+                cVM.saveToProtoDataStore()
             })
         }
         Column {
-            Text(text = "Lab 4")
+            Text(text = "Checkboxes")
+        }
+        Column {
+            Text(text = "PreferenceDataStore Box")
+            Checkbox(checked = preferDarkMode, onCheckedChange = {})
+        }
+        Column {
+            Text(text = "ProtoDataStore Box")
+            Checkbox(checked = protoDarkMode, onCheckedChange = {})
         }
     }
     }
 }
 
-fun doTheDataStore(flow: StateFlow<Boolean?>): Boolean {
-    if (flow.value == null){
-        return false
-    }
-    return true
-}
 
 
 
