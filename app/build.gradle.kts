@@ -62,7 +62,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.junit.ktx)
     testImplementation(libs.junit)
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -72,6 +74,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.datastore:datastore:1.1.1")
     implementation("com.google.protobuf:protobuf-kotlin-lite:3.21.7")
+    implementation("androidx.compose.ui:ui-test-junit4-android:1.6.7")
 }
 
 protobuf{

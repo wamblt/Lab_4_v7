@@ -1,9 +1,11 @@
 package com.example.lab_4_v5
 
 import android.app.Application
+import android.content.res.Resources.Theme
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +17,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -124,6 +128,8 @@ class CustomViewModel(val dataStore1: DataStore<Preferences>, val dataStore2: Da
             dataStore1.data.collect{
                 it[EXAMPLE_COUNTER]?.let { it1 -> _preferDarkMode.emit(it1) }
             }
+        }
+        viewModelScope.launch {
             dataStore2.data.collect{
                 _protoDarkMode.emit(it.exampleCounter)
             }
@@ -144,12 +150,10 @@ class CustomViewModel(val dataStore1: DataStore<Preferences>, val dataStore2: Da
 @Composable
 fun App(model: CustomViewModel = viewModel(factory = CustomViewModel.Factory)){
     val nav = rememberNavController()
-    //val darkModeFlag by model.preferDarkMode.collectAsState()
-    Lab_4_v5Theme()  {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            NavHost(navController = nav, startDestination = "main") {
-                composable("main"){ Menu(cVM = model) }
-            }
+
+    Surface(modifier = Modifier.fillMaxSize()) {
+        NavHost(navController = nav, startDestination = "main") {
+            composable("main"){ Menu(cVM = model) }
         }
     }
 }
@@ -160,37 +164,39 @@ fun Menu(cVM: CustomViewModel){
     val preferDarkMode by cVM.preferDarkMode.collectAsState()
     val protoDarkMode by cVM.protoDarkMode.collectAsState()
 
+    Lab_4_v5Theme(darkTheme = preferDarkMode || protoDarkMode) {
+        Scaffold(topBar = { TopAppBar(title = {Text(text = "Dark mode playground")}) }) {
+                innerpadding -> Column (modifier = Modifier.padding(innerpadding), verticalArrangement = Arrangement.SpaceBetween){
+            Column {
+                Text(text = "Checkboxes")
+            }
 
-    Scaffold(topBar = { TopAppBar(title = {Text(text = "Dark mode playground")}) }) {
-            innerpadding -> Column (modifier = Modifier.padding(innerpadding), verticalArrangement = Arrangement.SpaceBetween){
-        Column {
-            Text(text = "Checkboxes")
-        }
+            Column {
+                Text(text = "PreferenceDataStore Toggle")
+                Switch(checked = preferDarkMode, onCheckedChange = {
+                    cVM.saveToPreferDataStore()
+                })
+            }
+            Column {
+                Text(text = "ProtoDataStore Toggle")
+                Switch(checked = protoDarkMode, onCheckedChange = {
+                    cVM.saveToProtoDataStore()
+                })
+            }
+            Column {
+                Text(text = "Checkboxes")
+            }
+            Column {
+                Text(text = "PreferenceDataStore Box")
+                Checkbox(checked = preferDarkMode, onCheckedChange = {})
+            }
+            Column {
+                Text(text = "ProtoDataStore Box")
+                Checkbox(checked = protoDarkMode, onCheckedChange = {})
+            }
 
-        Column {
-            Text(text = "PreferenceDataStore Toggle")
-            Switch(checked = preferDarkMode, onCheckedChange = {
-                cVM.saveToPreferDataStore()
-            })
+            }
         }
-        Column {
-            Text(text = "ProtoDataStore Toggle")
-            Switch(checked = protoDarkMode, onCheckedChange = {
-                cVM.saveToProtoDataStore()
-            })
-        }
-        Column {
-            Text(text = "Checkboxes")
-        }
-        Column {
-            Text(text = "PreferenceDataStore Box")
-            Checkbox(checked = preferDarkMode, onCheckedChange = {})
-        }
-        Column {
-            Text(text = "ProtoDataStore Box")
-            Checkbox(checked = protoDarkMode, onCheckedChange = {})
-        }
-    }
     }
 }
 
