@@ -75,6 +75,7 @@ dependencies {
     implementation("androidx.datastore:datastore:1.1.1")
     implementation("com.google.protobuf:protobuf-kotlin-lite:3.21.7")
     implementation("androidx.compose.ui:ui-test-junit4-android:1.6.7")
+    implementation("androidx.test.espresso:espresso-core:3.5.1")
 }
 
 protobuf{

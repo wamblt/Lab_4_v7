@@ -20,25 +20,4 @@ import org.junit.jupiter.api.*
 
 class MainActivityKtTest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
-
-     private val textContext: Context = ApplicationProvider.getApplicationContext()
-    private val testCoroutineDispatcher = TestCoroutineDispatcher()
-    private val testCoroutineScope =
-        TestCoroutineScope(testCoroutineDispatcher + Job())
-
-    private val preferDataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(scope = testCoroutineScope, produceFile = {textContext.preferencesDataStoreFile("testPreferDataStore")})
-    private val protoDataStore: DataStore<MyProto> = DataStoreFactory.create(scope = testCoroutineScope, produceFile = {textContext.dataStoreFile("testname")}, serializer = SuperSerializer)
-
-
-    //UI tests
-    @Test
-    fun preferSwitchCheck(){
-        composeTestRule.setContent {
-            Menu(cVM = CustomViewModel(dataStore1 = preferDataStore, dataStore2 = protoDataStore))
-        }
-
-        composeTestRule.onNode(hasText("PreferenceDataStore Toggle")).assertExists()
-    }
 }

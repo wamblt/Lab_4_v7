@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.Serializer
@@ -82,6 +83,7 @@ class MainActivity : ComponentActivity(){
     }
 }
 
+//contains datastores to be used and updated
 class MyApp: Application(){
     val protoDataStore by dataStore(fileName = "myProtoDataStore", serializer = SuperSerializer)
     val preferDataStore by preferencesDataStore(name = "testDataStore")
@@ -120,10 +122,12 @@ class CustomViewModel(val dataStore1: DataStore<Preferences>, val dataStore2: Da
 
 
     init {
+        //inits the internal darkmode vals
         runBlocking {
             _preferDarkMode = MutableStateFlow(dataStore1.data.first().get(EXAMPLE_COUNTER)?:false)
             _protoDarkMode = MutableStateFlow(dataStore2.data.first().exampleCounter?:false)
         }
+        //inits the datastores for use in other functions
         viewModelScope.launch{
             dataStore1.data.collect{
                 it[EXAMPLE_COUNTER]?.let { it1 -> _preferDarkMode.emit(it1) }
@@ -168,18 +172,17 @@ fun Menu(cVM: CustomViewModel){
         Scaffold(topBar = { TopAppBar(title = {Text(text = "Dark mode playground")}) }) {
                 innerpadding -> Column (modifier = Modifier.padding(innerpadding), verticalArrangement = Arrangement.SpaceBetween){
             Column {
-                Text(text = "Checkboxes")
+                Text(text = "Toggles")
             }
-
             Column {
                 Text(text = "PreferenceDataStore Toggle")
-                Switch(checked = preferDarkMode, onCheckedChange = {
+                Switch(checked = preferDarkMode, modifier = Modifier.testTag("preferSwitch"), onCheckedChange = {
                     cVM.saveToPreferDataStore()
                 })
             }
             Column {
                 Text(text = "ProtoDataStore Toggle")
-                Switch(checked = protoDarkMode, onCheckedChange = {
+                Switch(checked = protoDarkMode, modifier = Modifier.testTag("protoSwitch"), onCheckedChange = {
                     cVM.saveToProtoDataStore()
                 })
             }
@@ -188,11 +191,11 @@ fun Menu(cVM: CustomViewModel){
             }
             Column {
                 Text(text = "PreferenceDataStore Box")
-                Checkbox(checked = preferDarkMode, onCheckedChange = {})
+                Checkbox(checked = preferDarkMode, onCheckedChange = {}, modifier = Modifier.testTag("preferCheck"))
             }
             Column {
                 Text(text = "ProtoDataStore Box")
-                Checkbox(checked = protoDarkMode, onCheckedChange = {})
+                Checkbox(checked = protoDarkMode, onCheckedChange = {}, modifier = Modifier.testTag("protoCheck"))
             }
 
             }
