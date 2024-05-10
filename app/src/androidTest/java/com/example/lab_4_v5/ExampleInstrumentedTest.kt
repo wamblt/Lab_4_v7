@@ -98,6 +98,7 @@ class ExampleInstrumentedTest {
         composeTestRule.onNode(hasText("ProtoDataStore Box")).assertExists()
     }
 
+    //this ran into idling errors
     @Test
     fun isValueUpdated() {
             composeTestRule.waitForIdle()
@@ -114,9 +115,11 @@ class ExampleInstrumentedTest {
 
 
     // DataStore tests
+    //this ran into assertion errors
     @Test
     fun UpdateDataStores(){
         val cVM = CustomViewModel(preferDataStore, protoDataStore)
+
 
         cVM.saveToPreferDataStore()
         cVM.saveToProtoDataStore()
@@ -125,6 +128,8 @@ class ExampleInstrumentedTest {
             assertTrue(cVM.preferDarkMode.first())
             assertTrue(cVM.protoDarkMode.first())
         }
+
+
 
     }
 
